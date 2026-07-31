@@ -11,13 +11,13 @@ const sequelize = new Sequelize(
     dialect: 'mysql',
   }
 );
-
 const connectDB = async () => {
   try {
     await sequelize.authenticate();
     console.log('MySQL connected successfully');
   } catch (err) {
     console.error('Unable to connect to MySQL:', err.message);
+    throw err; // let the caller decide what to do — don't swallow it
   }
 };
 

@@ -3,7 +3,7 @@ const { connectDB, sequelize } = require('./config/db');
 const authRoutes = require('./routes/auth.routes');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 
@@ -14,11 +14,16 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 
 const startServer = async () => {
-  await connectDB();
-  await sequelize.sync(); // creates the users table if it doesn't exist yet
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  try {
+    await connectDB();
+    await sequelize.sync();
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  } catch (err) {
+    console.error('Failed to start server:', err.message);
+    process.exit(1); // fail fast instead of limping along broken
+  }
 };
 
 startServer();

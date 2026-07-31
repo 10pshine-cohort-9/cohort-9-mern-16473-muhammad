@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const User = require('../models/user.model');
 
 const SALT_ROUNDS = 10;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const signup = async (req, res) => {
   try {
@@ -9,6 +10,10 @@ const signup = async (req, res) => {
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email and password are required' });
+    }
+
+    if (!EMAIL_REGEX.test(email)) {
+      return res.status(400).json({ message: 'Please provide a valid email address' });
     }
 
     const existingUser = await User.findOne({ where: { email } });
@@ -24,6 +29,11 @@ const signup = async (req, res) => {
       user: { id: user.id, name: user.name, email: user.email },
     });
   } catch (err) {
+    
+    if (err.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({ message: 'An account with this email already exists' });
+    }
+
     console.error('Signup error:', err.message);
     res.status(500).json({ message: 'Something went wrong. Please try again later.' });
   }
