@@ -2,6 +2,8 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const { connectDB, sequelize } = require('./config/db');
 const authRoutes = require('./routes/auth.routes');
+const notesRoutes = require('./routes/notes.routes');
+require('./models/note.model'); // ensures Note model + association is registered before sync()
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -14,6 +16,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/notes', notesRoutes);
 
 const startServer = async () => {
   try {
