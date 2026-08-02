@@ -1,5 +1,11 @@
 const Note = require('../models/note.model');
 
+// Shared helper: finds a note by id, scoped to the requesting user.
+// Returns null if not found or not owned by this user — callers handle the 404 response.
+const findUserNote = async (noteId, userId) => {
+  return Note.findOne({ where: { id: noteId, user_id: userId } });
+};
+
 const getAllNotes = async (req, res) => {
   try {
     const notes = await Note.findAll({
@@ -15,9 +21,7 @@ const getAllNotes = async (req, res) => {
 
 const getNoteById = async (req, res) => {
   try {
-    const note = await Note.findOne({
-      where: { id: req.params.id, user_id: req.user.id },
-    });
+    const note = await findUserNote(req.params.id, req.user.id);
 
     if (!note) {
       return res.status(404).json({ message: 'Note not found' });
@@ -50,9 +54,11 @@ const updateNote = async (req, res) => {
   try {
     const { title, content } = req.body || {};
 
-    const note = await Note.findOne({
-      where: { id: req.params.id, user_id: req.user.id },
-    });
+    if (title === '') {
+      return res.status(400).json({ message: 'Title cannot be empty' });
+    }
+
+    const note = await findUserNote(req.params.id, req.user.id);
 
     if (!note) {
       return res.status(404).json({ message: 'Note not found' });
@@ -71,9 +77,7 @@ const updateNote = async (req, res) => {
 
 const deleteNote = async (req, res) => {
   try {
-    const note = await Note.findOne({
-      where: { id: req.params.id, user_id: req.user.id },
-    });
+    const note = await findUserNote(req.params.id, req.user.id);
 
     if (!note) {
       return res.status(404).json({ message: 'Note not found' });
