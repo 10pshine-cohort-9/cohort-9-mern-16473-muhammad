@@ -1,83 +1,84 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
+const AppError = require('../utils/AppError');
+const catchAsync = require('../utils/catchAsync');
+const logger = require('../utils/logger');
 
 const SALT_ROUNDS = 10;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const signup = async (req, res) => {
+const signup = catchAsync(async (req, res) => {
+  const { name, email, password } = req.body || {};
+
+  if (!name || !email || !password) {
+    throw new AppError('Name, email and password are required', 400);
+  }
+
+  if (!EMAIL_REGEX.test(email)) {
+    throw new AppError('Please provide a valid email address', 400);
+  }
+
+  const existingUser = await User.findOne({ where: { email } });
+  if (existingUser) {
+    throw new AppError('An account with this email already exists', 409);
+  }
+
+  let user;
   try {
-    const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Name, email and password are required' });
-    }
-
-    if (!EMAIL_REGEX.test(email)) {
-      return res.status(400).json({ message: 'Please provide a valid email address' });
-    }
-
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return res.status(409).json({ message: 'An account with this email already exists' });
-    }
-
     const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
-    const user = await User.create({ name, email, password_hash });
-
-    res.status(201).json({
-      message: 'Account created successfully',
-      user: { id: user.id, name: user.name, email: user.email },
-    });
+    user = await User.create({ name, email, password_hash });
   } catch (err) {
     if (err.name === 'SequelizeUniqueConstraintError') {
-      return res.status(409).json({ message: 'An account with this email already exists' });
+      throw new AppError('An account with this email already exists', 409);
     }
-    console.error('Signup error:', err.message);
-    res.status(500).json({ message: 'Something went wrong. Please try again later.' });
+    throw err;
   }
-};
 
-const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+  logger.info({ userId: user.id }, 'New user registered');
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
+  res.status(201).json({
+    message: 'Account created successfully',
+    user: { id: user.id, name: user.name, email: user.email },
+  });
+});
 
-    const user = await User.findOne({ where: { email } });
-    if (!user) {
-      // Intentionally vague — don't reveal whether the email exists or not
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
+const login = catchAsync(async (req, res) => {
+  const { email, password } = req.body || {};
 
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
-
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '1d' }
-    );
-
-    res.cookie(process.env.COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000, // 1 day, matches JWT expiry
-    });
-
-    res.status(200).json({
-      message: 'Logged in successfully',
-      user: { id: user.id, name: user.name, email: user.email },
-    });
-  } catch (err) {
-    console.error('Login error:', err.message);
-    res.status(500).json({ message: 'Something went wrong. Please try again later.' });
+  if (!email || !password) {
+    throw new AppError('Email and password are required', 400);
   }
-};
+
+  const user = await User.findOne({ where: { email } });
+  if (!user) {
+    throw new AppError('Invalid email or password', 401);
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password_hash);
+  if (!isMatch) {
+    throw new AppError('Invalid email or password', 401);
+  }
+
+  const token = jwt.sign(
+    { id: user.id, email: user.email },
+    process.env.JWT_SECRET,
+    { expiresIn: '1d' }
+  );
+
+  res.cookie(process.env.COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000,
+  });
+
+  logger.info({ userId: user.id }, 'User logged in');
+
+  res.status(200).json({
+    message: 'Logged in successfully',
+    user: { id: user.id, name: user.name, email: user.email },
+  });
+});
 
 module.exports = { signup, login };
