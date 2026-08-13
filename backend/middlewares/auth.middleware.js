@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger');
 
 /**
  * Protects a route by requiring a valid JWT in the cookie.
@@ -17,6 +18,7 @@ const authenticate = (req, res, next) => {
     req.user = decoded; // { id, email }
     next(); // token is valid — let the request continue to the actual route
   } catch (err) {
+    logger.warn({ err: err.message }, 'JWT verification failed');
     return res.status(401).json({ message: 'Invalid or expired session' });
   }
 };
