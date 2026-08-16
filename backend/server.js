@@ -1,5 +1,6 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const cors = require('cors');
 const pinoHttp = require('pino-http');
 const { connectDB, sequelize } = require('./config/db');
 const authRoutes = require('./routes/auth.routes');
@@ -12,6 +13,10 @@ const app = express();
 app.disable('x-powered-by');
 const PORT = process.env.PORT || 5000;
 
+app.use(cors({
+  origin: 'http://localhost:5173', // your frontend's dev server
+  credentials: true, // allows the browser to send/receive the httpOnly cookie
+}));
 app.use(express.json());
 app.use(cookieParser());
 

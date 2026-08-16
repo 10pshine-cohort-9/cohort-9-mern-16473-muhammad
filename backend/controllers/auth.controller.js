@@ -39,4 +39,9 @@ const login = catchAsync(async (req, res) => {
   res.status(200).json({ message: 'Logged in successfully', user });
 });
 
-module.exports = { signup, login };
+const logout = (req, res) => {
+  res.clearCookie(process.env.COOKIE_NAME);
+  res.status(200).json({ message: 'Logged out successfully' });
+};
+
+module.exports = { signup, login, logout };
