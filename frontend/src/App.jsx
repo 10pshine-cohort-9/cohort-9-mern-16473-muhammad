@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import NoteEditor from './pages/NoteEditor';
+import CommandPalette from './components/CommandPalette';
 
 // Wraps routes that require login — redirects to /login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -60,10 +61,10 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <ParticleBackground />
+        <CommandPalette />
         <AppRoutes />
       </BrowserRouter>
     </AuthProvider>
   );
 }
-
 export default App;
