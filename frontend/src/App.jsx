@@ -4,6 +4,7 @@ import ParticleBackground from './components/ParticleBackground';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
+import NoteEditor from './pages/NoteEditor';
 
 // Wraps routes that require login — redirects to /login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -30,6 +31,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notes/new"
+        element={
+          <ProtectedRoute>
+            <NoteEditor />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notes/:id"
+        element={
+          <ProtectedRoute>
+            <NoteEditor />
           </ProtectedRoute>
         }
       />

@@ -1,1 +1,52 @@
 @import "tailwindcss";
+
+.quill-dark .ql-toolbar {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.quill-dark .ql-container {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 0 0 12px 12px !important;
+  min-height: 300px;
+  font-size: 16px;
+}
+
+.quill-dark .ql-editor {
+  color: #e2e8f0 !important;
+  min-height: 300px;
+}
+
+.quill-dark .ql-editor.ql-blank::before {
+  color: #64748b !important;
+  font-style: normal !important;
+}
+
+.quill-dark .ql-stroke {
+  stroke: #94a3b8 !important;
+}
+
+.quill-dark .ql-fill {
+  fill: #94a3b8 !important;
+}
+
+.quill-dark .ql-picker-label {
+  color: #94a3b8 !important;
+}
+
+.quill-dark .ql-picker-options {
+  background: #1e1b2e !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.quill-dark .ql-toolbar button:hover .ql-stroke,
+.quill-dark .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #a78bfa !important;
+}
+
+.quill-dark .ql-toolbar button:hover .ql-fill,
+.quill-dark .ql-toolbar button.ql-active .ql-fill {
+  fill: #a78bfa !important;
+}

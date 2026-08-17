@@ -5,7 +5,6 @@ import * as THREE from 'three';
 function Particles() {
   const pointsRef = useRef();
 
-  // Generate random particle positions once
   const particleCount = 2000;
   const positions = useMemo(() => {
     const arr = new Float32Array(particleCount * 3);
@@ -17,7 +16,6 @@ function Particles() {
     return arr;
   }, []);
 
-  // Slowly rotate the entire particle field for a living, drifting effect
   useFrame((state, delta) => {
     if (pointsRef.current) {
       pointsRef.current.rotation.x += delta * 0.02;
@@ -36,10 +34,10 @@ function Particles() {
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.035}
+        size={0.03}
         color="#8b5cf6"
         transparent
-        opacity={0.7}
+        opacity={0.45}
         sizeAttenuation
       />
     </points>
@@ -49,12 +47,22 @@ function Particles() {
 const ParticleBackground = () => {
   return (
     <div className="fixed inset-0 -z-10">
-      {/* Animated gradient base layer beneath the particles */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950/40 to-slate-950" />
-      <Canvas camera={{ position: [0, 0, 8], fov: 60 }}>
-        <ambientLight intensity={0.5} />
+<div
+  className="absolute inset-0"
+  style={{
+    background:
+      'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(88, 28, 135, 0.25), transparent), #000000',
+  }}
+/>
+      {/* Canvas temporarily disabled to isolate the light streak issue
+      <Canvas
+        camera={{ position: [0, 0, 8], fov: 60 }}
+        gl={{ alpha: true, antialias: true }}
+        style={{ background: 'transparent' }}
+      >
         <Particles />
       </Canvas>
+      */}
     </div>
   );
 };
