@@ -14,22 +14,31 @@ const Signup = () => {
   const { signup, login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setLoading(true);
 
-    try {
-      await signup(name, email, password);
-      // Auto-login right after signup so the user lands straight in the dashboard
-      await login(email, password);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    await signup(name, email, password);
+  } catch (err) {
+    setError(err.response?.data?.message || 'Something went wrong. Please try again.');
+    setLoading(false);
+    return;
+  }
+
+  try {
+    await login(email, password);
+    navigate('/dashboard');
+  } catch {
+    // Account was genuinely created — a failure here is just the auto-login
+    // step, not signup itself, so send them to log in manually instead of
+    // showing an error that implies account creation failed.
+    navigate('/login', { state: { message: 'Account created! Please log in.' } });
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <AuthLayout title="Create your account" subtitle="Start capturing your ideas today">
