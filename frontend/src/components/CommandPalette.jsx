@@ -1,42 +1,39 @@
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { getAllNotes } from '../services/notesApi';
+import { useNotes } from '../context/NotesContext';
 
 const stripHtml = (html) => html?.replace(/<[^>]*>/g, '') || '';
 
 const CommandPalette = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [notes, setNotes] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { user, logout } = useAuth();
+  const { notes, refreshNotes } = useNotes();
   const navigate = useNavigate();
 
-  // Global ⌘K / Ctrl+K listener — works from anywhere in the app
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setIsOpen((prev) => !prev);
       }
-      if (e.key === 'Escape') {
-        setIsOpen(false);
-      }
+      if (e.key === 'Escape') setIsOpen(false);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Load notes fresh each time the palette opens, so search is always current
   useEffect(() => {
     if (isOpen && user) {
-      getAllNotes().then(setNotes).catch(() => setNotes([]));
+      refreshNotes();
       setQuery('');
       setSelectedIndex(0);
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, refreshNotes]);
 
   const staticActions = useMemo(
     () => [
@@ -49,17 +46,13 @@ const CommandPalette = () => {
 
   const filteredActions = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const actions = q
-      ? staticActions.filter((a) => a.label.toLowerCase().includes(q))
-      : staticActions;
+    const actions = q ? staticActions.filter((a) => a.label.toLowerCase().includes(q)) : staticActions;
 
     const matchingNotes = q
       ? notes.filter(
-          (n) =>
-            n.title.toLowerCase().includes(q) ||
-            stripHtml(n.content).toLowerCase().includes(q)
+          (n) => n.title.toLowerCase().includes(q) || stripHtml(n.content).toLowerCase().includes(q)
         )
-      : notes.slice(0, 5); // show a handful of recent notes by default
+      : notes.slice(0, 5);
 
     const noteItems = matchingNotes.map((n) => ({
       id: `note-${n.id}`,
@@ -97,7 +90,7 @@ const CommandPalette = () => {
     }
   };
 
-  if (!user) return null; // only available once logged in
+  if (!user) return null;
 
   return (
     <AnimatePresence>
@@ -128,9 +121,7 @@ const CommandPalette = () => {
                   placeholder="Search notes or type a command..."
                   className="w-full bg-transparent text-white placeholder-slate-500 py-4 outline-none"
                 />
-                <kbd className="text-xs text-slate-500 border border-white/10 rounded px-1.5 py-0.5">
-                  esc
-                </kbd>
+                <kbd className="text-xs text-slate-500 border border-white/10 rounded px-1.5 py-0.5">esc</kbd>
               </div>
 
               <div className="max-h-80 overflow-y-auto py-2">
@@ -152,9 +143,7 @@ const CommandPalette = () => {
                     <span className="text-lg w-6 text-center">{item.icon}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate">{item.label}</p>
-                      {item.subtitle && (
-                        <p className="text-slate-500 text-xs truncate">{item.subtitle}</p>
-                      )}
+                      {item.subtitle && <p className="text-slate-500 text-xs truncate">{item.subtitle}</p>}
                     </div>
                   </button>
                 ))}

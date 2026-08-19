@@ -1,14 +1,16 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotesProvider } from './context/NotesContext';
 import ParticleBackground from './components/ParticleBackground';
+import CommandPalette from './components/CommandPalette';
+import AppLayout from './components/AppLayout';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import NoteEditor from './pages/NoteEditor';
-import CommandPalette from './components/CommandPalette';
 
-// Wraps routes that require login — redirects to /login if not authenticated
-const ProtectedRoute = ({ children }) => {
+// Auth guard for the whole authenticated app shell (sidebar + pages)
+const ProtectedShell = () => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -19,7 +21,9 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  return user ? children : <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" replace />;
+
+  return <AppLayout />;
 };
 
 function AppRoutes() {
@@ -27,30 +31,13 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/notes/new"
-        element={
-          <ProtectedRoute>
-            <NoteEditor />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/notes/:id"
-        element={
-          <ProtectedRoute>
-            <NoteEditor />
-          </ProtectedRoute>
-        }
-      />
+
+      <Route element={<ProtectedShell />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/notes/new" element={<NoteEditor />} />
+        <Route path="/notes/:id" element={<NoteEditor />} />
+      </Route>
+
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
@@ -59,12 +46,15 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <ParticleBackground />
-        <CommandPalette />
-        <AppRoutes />
-      </BrowserRouter>
+      <NotesProvider>
+        <BrowserRouter>
+          <ParticleBackground />
+          <CommandPalette />
+          <AppRoutes />
+        </BrowserRouter>
+      </NotesProvider>
     </AuthProvider>
   );
 }
+
 export default App;

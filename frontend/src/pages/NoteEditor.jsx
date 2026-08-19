@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { getNoteById, createNote, updateNote } from '../services/notesApi';
+import { useNotes } from '../context/NotesContext';
 
 const QUILL_MODULES = {
   toolbar: [
@@ -16,48 +17,76 @@ const QUILL_MODULES = {
   ],
 };
 
-const NoteEditor = () => {
-  const { id } = useParams(); // undefined when creating a new note
-  const isNew = !id || id === 'new';
-  const navigate = useNavigate();
+const AUTOSAVE_DELAY = 800; // ms after the user stops typing
 
+const NoteEditor = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { addNoteLocal, updateNoteLocal } = useNotes();
+
+  const [noteId, setNoteId] = useState(id && id !== 'new' ? id : null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [loading, setLoading] = useState(!isNew);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(!!noteId);
+  const [status, setStatus] = useState('idle'); // idle | saving | saved | error
   const [error, setError] = useState('');
 
+  const debounceRef = useRef(null);
+  const isFirstRender = useRef(true);
+
   useEffect(() => {
-    if (isNew) return;
-    getNoteById(id)
+    if (!noteId) {
+      setLoading(false);
+      return;
+    }
+    getNoteById(noteId)
       .then((note) => {
         setTitle(note.title);
         setContent(note.content || '');
       })
       .catch(() => setError('Could not load this note.'))
       .finally(() => setLoading(false));
-  }, [id, isNew]);
+  }, [noteId]);
 
-  const handleSave = async () => {
-    if (!title.trim()) {
-      setError('Title is required.');
+  const persist = useCallback(
+    async (nextTitle, nextContent) => {
+     
+      if (!nextTitle.trim()) return; // don't save a titleless note
+      setStatus('saving');
+      try {
+        if (!noteId) {
+          const created = await createNote(nextTitle, nextContent);
+          setNoteId(created.id);
+          addNoteLocal(created);
+          navigate(`/notes/${created.id}`, { replace: true });
+        } else {
+          const updated = await updateNote(noteId, nextTitle, nextContent);
+          updateNoteLocal(updated);
+        }
+        setStatus('saved');
+      } catch {
+        setStatus('error');
+      }
+    },
+    [noteId, addNoteLocal, updateNoteLocal, navigate]
+  );
+
+  useEffect(() => {
+  
+    if (loading) return;
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      
       return;
     }
-    setSaving(true);
-    setError('');
-    try {
-      if (isNew) {
-        await createNote(title, content);
-      } else {
-        await updateNote(id, title, content);
-      }
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Could not save this note.');
-    } finally {
-      setSaving(false);
-    }
-  };
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      
+      persist(title, content);
+    }, AUTOSAVE_DELAY);
+
+    return () => clearTimeout(debounceRef.current);
+  }, [title, content, loading, persist]);
 
   if (loading) {
     return (
@@ -67,15 +96,27 @@ const NoteEditor = () => {
     );
   }
 
+  const statusLabel = {
+    idle: '',
+    saving: 'Saving...',
+    saved: 'Saved',
+    error: 'Could not save',
+  }[status];
+
   return (
-    <div className="min-h-screen p-6 sm:p-10">
+    <div className="p-6 sm:p-10">
       <div className="max-w-4xl mx-auto">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="text-slate-400 hover:text-white mb-6 flex items-center gap-2 transition-colors"
-        >
-          ← Back to notes
-        </button>
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="text-slate-400 hover:text-white flex items-center gap-2 transition-colors"
+          >
+            ← Back
+          </button>
+          <span className={`text-sm ${status === 'error' ? 'text-red-400' : 'text-slate-500'}`}>
+            {statusLabel}
+          </span>
+        </div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -102,22 +143,6 @@ const NoteEditor = () => {
           </div>
 
           {error && <p className="text-red-400 mt-4">{error}</p>}
-
-          <div className="flex justify-end gap-3 mt-6">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-semibold shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 transition-all disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : 'Save Note'}
-            </button>
-          </div>
         </motion.div>
       </div>
     </div>

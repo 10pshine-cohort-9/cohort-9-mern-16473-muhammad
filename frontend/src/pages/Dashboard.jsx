@@ -1,74 +1,39 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { getAllNotes, deleteNote } from '../services/notesApi';
+import { useNotes } from '../context/NotesContext';
+import { deleteNote } from '../services/notesApi';
 import NoteCard from '../components/NoteCard';
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
-  const [notes, setNotes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { user } = useAuth();
+  const { notes, loading, error, refreshNotes, removeNoteLocal } = useNotes();
   const navigate = useNavigate();
 
-  const loadNotes = async () => {
-    try {
-      const data = await getAllNotes();
-      setNotes(data);
-    } catch (err) {
-      setError('Could not load your notes. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadNotes();
-  }, []);
+    refreshNotes();
+  }, [refreshNotes]);
 
   const handleDelete = async (id) => {
-    // Optimistically remove it from the UI, then confirm with the server
-    setNotes((prev) => prev.filter((n) => n.id !== id));
+    removeNoteLocal(id);
     try {
       await deleteNote(id);
-    } catch (err) {
-      // If the delete actually failed, restore the list from the server
-      loadNotes();
+    } catch {
+      refreshNotes();
     }
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
   };
 
   return (
-    <div className="min-h-screen p-6 sm:p-10">
+    <div className="p-6 sm:p-10">
       <div className="max-w-6xl mx-auto">
-        <header className="flex items-center justify-between mb-10">
-          <div>
-            <h1 className="text-3xl font-bold text-white">
-              Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
-            </h1>
-            <p className="text-slate-400 mt-1">
-              {notes.length} note{notes.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/notes/new')}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-semibold shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 hover:scale-105 active:scale-95 transition-all"
-            >
-              + New Note
-            </button>
-            <button
-              onClick={handleLogout}
-              className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
-            >
-              Logout
-            </button>
-          </div>
+        <header className="mb-10">
+          <h1 className="text-3xl font-bold text-white">
+            Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
+          </h1>
+          <p className="text-slate-400 mt-1">
+            {notes.length} note{notes.length !== 1 ? 's' : ''}
+          </p>
         </header>
 
         {loading && <p className="text-slate-400">Loading your notes...</p>}
