@@ -34,9 +34,14 @@ const updateNote = catchAsync(async (req, res) => {
   res.status(200).json({ message: 'Note updated', note });
 });
 
+const toggleFavorite = catchAsync(async (req, res) => {
+  const note = await notesService.toggleFavorite(req.params.id, req.user.id);
+  res.status(200).json({ message: 'Favorite status updated', note });
+});
+
 const deleteNote = catchAsync(async (req, res) => {
   await notesService.deleteNote(req.params.id, req.user.id);
   res.status(200).json({ message: 'Note deleted' });
 });
 
-module.exports = { getAllNotes, getNoteById, createNote, updateNote, deleteNote };
+module.exports = { getAllNotes, getNoteById, createNote, updateNote, toggleFavorite, deleteNote };

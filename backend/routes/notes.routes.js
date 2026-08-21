@@ -11,6 +11,7 @@ router.get('/', notesController.getAllNotes);
 router.get('/:id', notesController.getNoteById);
 router.post('/', notesController.createNote);
 router.put('/:id', notesController.updateNote);
+router.patch('/:id/favorite', notesController.toggleFavorite);
 router.delete('/:id', notesController.deleteNote);
 
 module.exports = router;

@@ -13,8 +13,13 @@ const Note = sequelize.define('Note', {
     allowNull: false,
   },
   content: {
-    type: DataTypes.TEXT('long'), 
+    type: DataTypes.TEXT('long'),
     allowNull: true,
+  },
+  is_favorite: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
   },
   user_id: {
     type: DataTypes.INTEGER,
