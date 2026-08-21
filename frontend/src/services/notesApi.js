@@ -6,4 +6,6 @@ export const createNote = (title, content) =>
   api.post('/notes', { title, content }).then((res) => res.data.note);
 export const updateNote = (id, title, content) =>
   api.put(`/notes/${id}`, { title, content }).then((res) => res.data.note);
+export const toggleFavorite = (id) =>
+  api.patch(`/notes/${id}/favorite`).then((res) => res.data.note);
 export const deleteNote = (id) => api.delete(`/notes/${id}`);

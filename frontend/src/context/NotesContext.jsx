@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react';
-import { getAllNotes } from '../services/notesApi';
+import { getAllNotes, toggleFavorite as toggleFavoriteApi } from '../services/notesApi';
 
 const NotesContext = createContext(null);
 
@@ -26,9 +26,26 @@ export const NotesProvider = ({ children }) => {
     setNotes((prev) => prev.map((n) => (n.id === note.id ? note : n)));
   const removeNoteLocal = (id) => setNotes((prev) => prev.filter((n) => n.id !== id));
 
+  // Optimistic-ish: calls the API, then syncs the returned note into local state
+  // so the sidebar, dashboard, and command palette all update together.
+  const toggleFavorite = useCallback(async (id) => {
+    const updated = await toggleFavoriteApi(id);
+    setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+    return updated;
+  }, []);
+
   return (
     <NotesContext.Provider
-      value={{ notes, loading, error, refreshNotes, addNoteLocal, updateNoteLocal, removeNoteLocal }}
+      value={{
+        notes,
+        loading,
+        error,
+        refreshNotes,
+        addNoteLocal,
+        updateNoteLocal,
+        removeNoteLocal,
+        toggleFavorite,
+      }}
     >
       {children}
     </NotesContext.Provider>
