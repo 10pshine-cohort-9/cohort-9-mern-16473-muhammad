@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useNotes } from '../context/NotesContext';
 import { useAuth } from '../context/AuthContext';
 import StarIcon from './StarIcon';
+import { stripHtml } from '../utils/stripHtml';
 
 const Sidebar = () => {
   const { notes, loading, refreshNotes, toggleFavorite } = useNotes();
@@ -15,7 +16,13 @@ const Sidebar = () => {
     refreshNotes();
   }, [refreshNotes]);
 
-  const filtered = notes.filter((n) => n.title.toLowerCase().includes(query.toLowerCase()));
+  const filtered = notes.filter((n) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    const titleMatch = n.title.toLowerCase().includes(q);
+    const contentMatch = stripHtml(n.content).toLowerCase().includes(q);
+    return titleMatch || contentMatch;
+  });
   const favorites = filtered.filter((n) => n.is_favorite);
   const rest = filtered.filter((n) => !n.is_favorite);
 
@@ -62,12 +69,12 @@ const Sidebar = () => {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
             <StarIcon filled className="w-4 h-4" />
           </div>
-          <span className="font-bold text-white">Notes</span>
+          <span className="font-bold text-white">notex</span>
         </div>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search..."
+          placeholder="Search title or content..."
           className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-violet-400/50"
         />
       </div>
