@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotes } from '../context/NotesContext';
 import { deleteNote } from '../services/notesApi';
 import NoteCard from '../components/NoteCard';
+import EmptyNotesIllustration from '../components/EmptyNotesIllustration';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -30,14 +31,26 @@ const Dashboard = () => {
   return (
     <div className="p-6 sm:p-10">
       <div className="max-w-6xl mx-auto">
-        <header className="mb-6">
-          <h1 className="text-3xl font-bold text-white">
-            Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
-          </h1>
-          <p className="text-slate-400 mt-1">
-            {notes.length} note{notes.length !== 1 ? 's' : ''}
-          </p>
-        </header>
+        <div className="mb-6 rounded-3xl bg-gradient-to-br from-violet-500/10 via-fuchsia-500/5 to-transparent border border-white/10 p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-violet-300/80 mb-2">
+              Personal Workspace
+            </p>
+            <h1 className="text-3xl font-bold text-white mb-1">
+              Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''}.
+            </h1>
+            <p className="text-slate-400 text-sm">
+              {notes.length} note{notes.length !== 1 ? 's' : ''} — capture ideas, plans, and
+              reminders, all in one place.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/notes/new')}
+            className="shrink-0 px-5 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white text-sm font-semibold hover:opacity-90 transition-opacity whitespace-nowrap"
+          >
+            + New Note
+          </button>
+        </div>
 
         <div className="flex items-center gap-2 mb-8">
           <button
@@ -66,13 +79,20 @@ const Dashboard = () => {
         {error && <p className="text-red-400">{error}</p>}
 
         {!loading && !error && notes.length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-slate-400 text-lg mb-4">You don't have any notes yet.</p>
+          <div className="text-center py-12">
+            <EmptyNotesIllustration />
+            <p className="text-white text-lg font-semibold mt-6 mb-2">
+              Start creating your first note!
+            </p>
+            <p className="text-slate-400 max-w-sm mx-auto mb-6">
+              Click "New Note" to write down your thoughts, ideas, and reminders. Let's get
+              started!
+            </p>
             <button
               onClick={() => navigate('/notes/new')}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-semibold"
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-semibold hover:opacity-90 transition-opacity"
             >
-              Create your first note
+              + New Note
             </button>
           </div>
         )}

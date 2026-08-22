@@ -1,8 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import NotebookIllustration from './NotebookIllustration';
-
-const STORAGE_KEY = 'notex_welcome_seen';
 
 const FEATURES = [
   'Persistent sidebar — all your notes, one click away',
@@ -15,17 +13,11 @@ const FEATURES = [
 const HANDWRITING_FONT = { fontFamily: "'Caveat', cursive" };
 
 const WelcomeModal = () => {
-  const [show, setShow] = useState(false);
+  // Shows fresh every time this component mounts — which happens on every
+  // login/signup (AppLayout only mounts once a user is authenticated).
+  const [show, setShow] = useState(true);
 
-  useEffect(() => {
-    const seen = localStorage.getItem(STORAGE_KEY);
-    if (!seen) setShow(true);
-  }, []);
-
-  const handleDismiss = () => {
-    localStorage.setItem(STORAGE_KEY, 'true');
-    setShow(false);
-  };
+  const handleDismiss = () => setShow(false);
 
   return (
     <AnimatePresence>
