@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNotes } from '../context/NotesContext';
 import { useAuth } from '../context/AuthContext';
 import StarIcon from './StarIcon';
@@ -11,6 +12,7 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const { id: activeId } = useParams();
   const [query, setQuery] = useState('');
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     refreshNotes();
@@ -35,6 +37,8 @@ const Sidebar = () => {
     e.stopPropagation();
     toggleFavorite(id);
   };
+
+  const initials = (user?.name || user?.email || '?').charAt(0).toUpperCase();
 
   const renderNoteButton = (note) => (
     <button
@@ -116,14 +120,52 @@ const Sidebar = () => {
         )}
       </nav>
 
-      <div className="p-4 border-t border-white/10 flex items-center justify-between gap-2">
-        <span className="text-sm text-slate-400 truncate">{user?.email}</span>
+      <div className="relative p-4 border-t border-white/10">
         <button
-          onClick={handleLogout}
-          className="text-slate-500 hover:text-red-400 text-sm transition-colors shrink-0"
+          onClick={() => setProfileOpen((v) => !v)}
+          className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors text-left"
         >
-          Logout
+          <div className="w-9 h-9 shrink-0 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-sm font-bold text-white">
+            {initials}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-white truncate">{user?.name || 'Account'}</p>
+            <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+          </div>
         </button>
+
+        <AnimatePresence>
+          {profileOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ duration: 0.15 }}
+                className="absolute z-50 left-4 right-4 bottom-full mb-2 bg-[#1e1b2e] border border-white/10 rounded-2xl p-4 shadow-2xl"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-11 h-11 shrink-0 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-base font-bold text-white">
+                    {initials}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">
+                      {user?.name || 'Account'}
+                    </p>
+                    <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-3 py-2 rounded-lg bg-red-500/10 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-colors"
+                >
+                  Logout
+                </button>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </aside>
   );
