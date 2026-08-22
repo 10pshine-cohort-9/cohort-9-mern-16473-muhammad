@@ -13,8 +13,13 @@ const app = express();
 app.disable('x-powered-by');
 const PORT = process.env.PORT || 5000;
 
+if (!process.env.FRONTEND_URL) {
+  logger.error('FRONTEND_URL is not set — refusing to start without a configured CORS origin.');
+  process.exit(1);
+}
+
 app.use(cors({
-  origin: 'http://localhost:5173', // your frontend's dev server
+  origin: process.env.FRONTEND_URL, // the frontend origin allowed to send credentialed requests
   credentials: true, // allows the browser to send/receive the httpOnly cookie
 }));
 app.use(express.json());
