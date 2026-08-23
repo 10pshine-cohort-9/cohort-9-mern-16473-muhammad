@@ -8,8 +8,13 @@ const AppLayout = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    try {
+      await logout();
+    } finally {
+      // Always leave the protected area, even if the server-side logout
+      // request itself failed — local auth state is already cleared either way.
+      navigate('/login', { replace: true });
+    }
   };
 
   return (

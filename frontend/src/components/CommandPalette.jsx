@@ -1,11 +1,9 @@
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNotes } from '../context/NotesContext';
-
-const stripHtml = (html) => html?.replace(/<[^>]*>/g, '') || '';
+import { stripHtml } from '../utils/stripHtml';
 
 const CommandPalette = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,13 +33,21 @@ const CommandPalette = () => {
     }
   }, [isOpen, user, refreshNotes]);
 
+  const handleLogout = useCallback(async () => {
+    try {
+      await logout();
+    } finally {
+      navigate('/login', { replace: true });
+    }
+  }, [logout, navigate]);
+
   const staticActions = useMemo(
     () => [
       { id: 'new-note', label: 'Create new note', icon: '✦', action: () => navigate('/notes/new') },
       { id: 'dashboard', label: 'Go to dashboard', icon: '⌂', action: () => navigate('/dashboard') },
-      { id: 'logout', label: 'Log out', icon: '⏻', action: async () => { await logout(); navigate('/login'); } },
+      { id: 'logout', label: 'Log out', icon: '⏻', action: handleLogout },
     ],
-    [navigate, logout]
+    [navigate, handleLogout]
   );
 
   const filteredActions = useMemo(() => {
@@ -69,13 +75,18 @@ const CommandPalette = () => {
     setSelectedIndex(0);
   }, [query]);
 
-  const runSelected = useCallback(() => {
-    const item = filteredActions[selectedIndex];
-    if (item) {
-      item.action();
-      setIsOpen(false);
-    }
-  }, [filteredActions, selectedIndex]);
+  // Runs whichever item index is passed in — defaults to the currently
+  // highlighted one (used for Enter-to-select from the keyboard).
+  const runItem = useCallback(
+    (index) => {
+      const item = filteredActions[index];
+      if (item) {
+        item.action();
+        setIsOpen(false);
+      }
+    },
+    [filteredActions]
+  );
 
   const handleInputKeyDown = (e) => {
     if (e.key === 'ArrowDown') {
@@ -86,7 +97,7 @@ const CommandPalette = () => {
       setSelectedIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      runSelected();
+      runItem(selectedIndex);
     }
   };
 
@@ -131,10 +142,7 @@ const CommandPalette = () => {
                 {filteredActions.map((item, index) => (
                   <button
                     key={item.id}
-                    onClick={() => {
-                      setSelectedIndex(index);
-                      runSelected();
-                    }}
+                    onClick={() => runItem(index)}
                     onMouseEnter={() => setSelectedIndex(index)}
                     className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
                       index === selectedIndex ? 'bg-violet-500/15' : ''

@@ -27,12 +27,30 @@ const NoteEditor = () => {
   const [noteId, setNoteId] = useState(id && id !== 'new' ? id : null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [loading, setLoading] = useState(!!noteId);
+  const [loading, setLoading] = useState(!!(id && id !== 'new'));
   const [status, setStatus] = useState('idle'); // idle | saving | saved | error
   const [error, setError] = useState('');
 
   const debounceRef = useRef(null);
   const isFirstRender = useRef(true);
+  const creatingRef = useRef(false); // guards against creating a duplicate note
+  const latestDraftRef = useRef({ title: '', content: '' }); // for flush-on-unmount
+
+  // Reset all editor state whenever the URL's note id changes — e.g. the user
+  // clicks a different note in the sidebar while already inside the editor.
+  // Without this, the editor could keep showing/autosaving the previous note.
+  useEffect(() => {
+    const nextNoteId = id && id !== 'new' ? id : null;
+    setNoteId(nextNoteId);
+    setTitle('');
+    setContent('');
+    setStatus('idle');
+    setError('');
+    setLoading(!!nextNoteId);
+    isFirstRender.current = true;
+    creatingRef.current = false;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+  }, [id]);
 
   useEffect(() => {
     if (!noteId) {
@@ -50,11 +68,13 @@ const NoteEditor = () => {
 
   const persist = useCallback(
     async (nextTitle, nextContent) => {
-     
       if (!nextTitle.trim()) return; // don't save a titleless note
+      if (!noteId && creatingRef.current) return; // an initial create is already in flight
+
       setStatus('saving');
       try {
         if (!noteId) {
+          creatingRef.current = true;
           const created = await createNote(nextTitle, nextContent);
           setNoteId(created.id);
           addNoteLocal(created);
@@ -66,27 +86,51 @@ const NoteEditor = () => {
         setStatus('saved');
       } catch {
         setStatus('error');
+      } finally {
+        creatingRef.current = false;
       }
     },
     [noteId, addNoteLocal, updateNoteLocal, navigate]
   );
 
+  // Mirror the latest draft into a ref so the unmount-flush below can read
+  // current values without depending on a (potentially stale) closure.
   useEffect(() => {
-  
+    latestDraftRef.current = { title, content };
+  }, [title, content]);
+
+  // Silent debounced autosave whenever title/content change — no Save button needed
+  useEffect(() => {
     if (loading) return;
     if (isFirstRender.current) {
       isFirstRender.current = false;
-      
       return;
     }
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      
       persist(title, content);
     }, AUTOSAVE_DELAY);
 
     return () => clearTimeout(debounceRef.current);
   }, [title, content, loading, persist]);
+
+  // Flush any unsaved draft when leaving this note (switching to another note
+  // or navigating away entirely) so a quick exit within the debounce window
+  // doesn't silently lose what was typed.
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        const { title: pendingTitle, content: pendingContent } = latestDraftRef.current;
+        if (pendingTitle.trim()) {
+          persist(pendingTitle, pendingContent);
+        }
+      }
+    };
+    // Only re-run this cleanup when switching notes or unmounting, not on
+    // every keystroke — `persist` is intentionally excluded here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   if (loading) {
     return (

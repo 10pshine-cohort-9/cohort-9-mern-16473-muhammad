@@ -47,14 +47,13 @@ function Particles() {
 const ParticleBackground = () => {
   return (
     <div className="fixed inset-0 -z-10">
-<div
-  className="absolute inset-0"
-  style={{
-    background:
-      'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(88, 28, 135, 0.25), transparent), #000000',
-  }}
-/>
-      {/* Canvas temporarily disabled to isolate the light streak issue
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(88, 28, 135, 0.25), transparent), #000000',
+        }}
+      />
       <Canvas
         camera={{ position: [0, 0, 8], fov: 60 }}
         gl={{ alpha: true, antialias: true }}
@@ -62,7 +61,6 @@ const ParticleBackground = () => {
       >
         <Particles />
       </Canvas>
-      */}
     </div>
   );
 };

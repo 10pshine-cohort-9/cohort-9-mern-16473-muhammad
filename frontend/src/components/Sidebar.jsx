@@ -29,41 +29,46 @@ const Sidebar = () => {
   const rest = filtered.filter((n) => !n.is_favorite);
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    try {
+      await logout();
+    } finally {
+      navigate('/login', { replace: true });
+    }
   };
 
-  const handleToggleFavorite = (e, id) => {
-    e.stopPropagation();
-    toggleFavorite(id);
+  const handleToggleFavorite = (id) => {
+    toggleFavorite(id).catch(() => {
+      // Swallow here — NotesContext already leaves local state unchanged on failure.
+    });
   };
 
   const initials = (user?.name || user?.email || '?').charAt(0).toUpperCase();
 
+  // Rendered as two SIBLING buttons (not a button nested inside a button) —
+  // nesting interactive controls breaks keyboard/screen-reader navigation.
   const renderNoteButton = (note) => (
-    <button
+    <div
       key={note.id}
-      onClick={() => navigate(`/notes/${note.id}`)}
-      className={`w-full flex items-center justify-between gap-2 text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+      className={`w-full flex items-center gap-1 rounded-lg text-sm transition-colors ${
         String(note.id) === activeId
           ? 'bg-violet-500/20 text-white'
           : 'text-slate-400 hover:bg-white/5 hover:text-white'
       }`}
     >
-      <span className="truncate">{note.title || 'Untitled'}</span>
-      <span
-        role="button"
-        tabIndex={0}
-        onClick={(e) => handleToggleFavorite(e, note.id)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') handleToggleFavorite(e, note.id);
-        }}
-        className="shrink-0 p-0.5 rounded hover:scale-110 transition-transform"
+      <button
+        onClick={() => navigate(`/notes/${note.id}`)}
+        className="flex-1 min-w-0 text-left px-3 py-2 truncate"
+      >
+        {note.title || 'Untitled'}
+      </button>
+      <button
+        onClick={() => handleToggleFavorite(note.id)}
+        className="shrink-0 p-1.5 mr-1 rounded hover:scale-110 transition-transform"
         aria-label={note.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
       >
         <StarIcon filled={note.is_favorite} className="w-4 h-4" />
-      </span>
-    </button>
+      </button>
+    </div>
   );
 
   return (
