@@ -13,8 +13,13 @@ const app = express();
 app.disable('x-powered-by');
 const PORT = process.env.PORT || 5000;
 
-if (!process.env.FRONTEND_URL) {
-  logger.error('FRONTEND_URL is not set — refusing to start without a configured CORS origin.');
+const REQUIRED_ENV_VARS = ['FRONTEND_URL', 'JWT_SECRET', 'COOKIE_NAME'];
+const missingEnvVars = REQUIRED_ENV_VARS.filter((key) => !process.env[key]);
+if (missingEnvVars.length > 0) {
+  logger.error(
+    { missingEnvVars },
+    'Refusing to start: required environment variables are not set.'
+  );
   process.exit(1);
 }
 

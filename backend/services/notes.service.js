@@ -1,3 +1,4 @@
+const { sequelize } = require('../config/db');
 const Note = require('../models/note.model');
 const AppError = require('../utils/AppError');
 const logger = require('../utils/logger');
@@ -35,13 +36,17 @@ const updateNote = async (noteId, userId, { title, content }) => {
 };
 
 const toggleFavorite = async (noteId, userId) => {
-  const note = await getNoteById(noteId, userId); // throws 404 if not found/owned
+  await getNoteById(noteId, userId);
 
-  note.is_favorite = !note.is_favorite;
-  await note.save();
+  
+  await sequelize.query(
+    'UPDATE notes SET is_favorite = NOT is_favorite, updated_at = NOW() WHERE id = :noteId AND user_id = :userId',
+    { replacements: { noteId, userId } }
+  );
 
-  logger.info({ noteId: note.id, userId, isFavorite: note.is_favorite }, 'Note favorite toggled');
-  return note;
+  const updated = await getNoteById(noteId, userId);
+  logger.info({ noteId: updated.id, userId, isFavorite: updated.is_favorite }, 'Note favorite toggled');
+  return updated;
 };
 
 const deleteNote = async (noteId, userId) => {
