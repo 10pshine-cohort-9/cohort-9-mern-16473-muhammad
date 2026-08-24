@@ -16,9 +16,12 @@ describe('Auth Service', () => {
   });
 
   after(() => {
-    process.env.JWT_SECRET = originalJwtSecret;
+    if (originalJwtSecret === undefined) {
+      delete process.env.JWT_SECRET;
+    } else {
+      process.env.JWT_SECRET = originalJwtSecret;
+    }
   });
-
   afterEach(() => sinon.restore()); // undo stubs after each test so they don't leak between tests
 
   describe('signup', () => {
