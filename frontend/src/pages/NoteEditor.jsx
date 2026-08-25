@@ -38,7 +38,6 @@ const NoteEditor = () => {
 
   // Reset all editor state whenever the URL's note id changes — e.g. the user
   // clicks a different note in the sidebar while already inside the editor.
-  // Without this, the editor could keep showing/autosaving the previous note.
   useEffect(() => {
     const nextNoteId = id && id !== 'new' ? id : null;
     setNoteId(nextNoteId);
@@ -49,21 +48,37 @@ const NoteEditor = () => {
     setLoading(!!nextNoteId);
     isFirstRender.current = true;
     creatingRef.current = false;
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
   }, [id]);
 
+  // Load the note whenever noteId changes — guarded against a stale/older
+  // response arriving after a newer one (e.g. switching notes quickly),
+  // which could otherwise overwrite fresh content with old data.
   useEffect(() => {
     if (!noteId) {
       setLoading(false);
       return;
     }
+    let cancelled = false;
     getNoteById(noteId)
       .then((note) => {
+        if (cancelled) return;
         setTitle(note.title);
         setContent(note.content || '');
       })
-      .catch(() => setError('Could not load this note.'))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!cancelled) setError('Could not load this note.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [noteId]);
 
   const persist = useCallback(
@@ -108,6 +123,11 @@ const NoteEditor = () => {
     }
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
+      // Clear the ref BEFORE persisting — once this timer has fired there is
+      // nothing left to flush, so the unmount-flush cleanup below must not
+      // see a stale truthy ref and re-persist (which could create a
+      // duplicate note if this save is still what creates it).
+      debounceRef.current = null;
       persist(title, content);
     }, AUTOSAVE_DELAY);
 
@@ -121,6 +141,7 @@ const NoteEditor = () => {
     return () => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
+        debounceRef.current = null;
         const { title: pendingTitle, content: pendingContent } = latestDraftRef.current;
         if (pendingTitle.trim()) {
           persist(pendingTitle, pendingContent);

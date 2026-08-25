@@ -31,6 +31,10 @@ const Sidebar = () => {
   const handleLogout = async () => {
     try {
       await logout();
+    } catch {
+      // Local auth state is already cleared by AuthContext either way —
+      // nothing further to do besides not letting this surface as an
+      // unhandled promise rejection.
     } finally {
       navigate('/login', { replace: true });
     }
@@ -44,8 +48,6 @@ const Sidebar = () => {
 
   const initials = (user?.name || user?.email || '?').charAt(0).toUpperCase();
 
-  // Rendered as two SIBLING buttons (not a button nested inside a button) —
-  // nesting interactive controls breaks keyboard/screen-reader navigation.
   const renderNoteButton = (note) => (
     <div
       key={note.id}

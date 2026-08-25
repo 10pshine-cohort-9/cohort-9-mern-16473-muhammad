@@ -36,6 +36,10 @@ const CommandPalette = () => {
   const handleLogout = useCallback(async () => {
     try {
       await logout();
+    } catch {
+      // Local auth state is already cleared by AuthContext either way —
+      // nothing further to do besides not letting this surface as an
+      // unhandled promise rejection.
     } finally {
       navigate('/login', { replace: true });
     }
@@ -71,12 +75,18 @@ const CommandPalette = () => {
     return [...actions, ...noteItems];
   }, [query, notes, staticActions, navigate]);
 
+  // Whenever the result list changes shape (new query, notes finished
+  // loading, etc.) keep selectedIndex inside valid bounds — otherwise it can
+  // get stuck at -1 after an empty-results moment and Enter silently does
+  // nothing even once real results exist.
+  useEffect(() => {
+    setSelectedIndex((i) => Math.min(Math.max(i, 0), Math.max(filteredActions.length - 1, 0)));
+  }, [filteredActions.length]);
+
   useEffect(() => {
     setSelectedIndex(0);
   }, [query]);
 
-  // Runs whichever item index is passed in — defaults to the currently
-  // highlighted one (used for Enter-to-select from the keyboard).
   const runItem = useCallback(
     (index) => {
       const item = filteredActions[index];
@@ -91,13 +101,13 @@ const CommandPalette = () => {
   const handleInputKeyDown = (e) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((i) => Math.min(i + 1, filteredActions.length - 1));
+      setSelectedIndex((i) => Math.max(0, Math.min(i + 1, filteredActions.length - 1)));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setSelectedIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      runItem(selectedIndex);
+      if (selectedIndex >= 0) runItem(selectedIndex);
     }
   };
 

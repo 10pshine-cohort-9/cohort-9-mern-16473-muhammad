@@ -10,9 +10,11 @@ const AppLayout = () => {
   const handleLogout = async () => {
     try {
       await logout();
+    } catch {
+      // Local auth state is already cleared by AuthContext either way —
+      // nothing further to do besides not letting this surface as an
+      // unhandled promise rejection.
     } finally {
-      // Always leave the protected area, even if the server-side logout
-      // request itself failed — local auth state is already cleared either way.
       navigate('/login', { replace: true });
     }
   };

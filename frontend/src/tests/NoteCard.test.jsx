@@ -5,7 +5,8 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
-const mockToggleFavorite = jest.fn();
+
+const mockToggleFavorite = jest.fn().mockResolvedValue({});
 jest.mock('../context/NotesContext', () => ({
   useNotes: () => ({ toggleFavorite: mockToggleFavorite }),
 }));
