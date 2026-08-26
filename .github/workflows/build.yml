@@ -29,6 +29,11 @@ jobs:
       - name: Run backend tests with coverage
         working-directory: backend
         run: npm run test:coverage
+        env:
+          NODE_ENV: test
+          FRONTEND_URL: http://localhost:5173
+          JWT_SECRET: ci-test-secret-key
+          COOKIE_NAME: notes_token
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
         env:
